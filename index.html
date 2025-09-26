@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>🌾 Crop Recommendation Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4caf50;
+      --primary-dark: #388e3c;
+      --bg-gradient: linear-gradient(135deg, #d9fdd3, #a5d6a7);
+      --text-dark: #1b5e20;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .wrapper {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      max-width: 1100px;
+      width: 100%;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      flex: 1 1 450px;
+      max-width: 550px;
+      transition: transform 0.3s ease;
+    }
+    .card:hover { transform: translateY(-4px); }
+    h1 {
+      text-align: center;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+      font-size: 26px;
+    }
+    p {
+      text-align: center;
+      color: #555;
+      margin-bottom: 20px;
+    }
+    .input-group { margin-bottom: 14px; }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #c8e6c9;
+      font-size: 15px;
+    }
+    input:focus { border-color: var(--primary); outline: none; }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+    button:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    #result {
+      margin-top: 15px;
+      padding: 14px;
+      background: #f1f8e9;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 17px;
+      color: var(--text-dark);
+    }
+    /* Enlarged weather panel */
+    .weather-box {
+      width: 260px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .weather-box h2 { font-size: 20px; margin-bottom: 10px; }
+    .weather-temp { font-size: 36px; font-weight: 700; }
+    .weather-details { margin-top: 8px; font-size: 15px; line-height: 1.5; }
+    .recommend-note {
+      margin-top: 12px;
+      background: rgba(255,255,255,0.2);
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    @media(max-width: 768px) {
+      .wrapper { flex-direction: column; }
+      .weather-box { width: 100%; max-width: 350px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <h1>🌾 Crop Recommendation</h1>
+      <p>Enter soil and climate details or allow location for auto-fill.</p>
+      <form id="crop-form">
+        <div class="input-group"><label for="N">Nitrogen (N)</label><input type="number" id="N" required></div>
+        <div class="input-group"><label for="P">Phosphorus (P)</label><input type="number" id="P" required></div>
+        <div class="input-group"><label for="K">Potassium (K)</label><input type="number" id="K" required></div>
+        <div class="input-group"><label for="temperature">Temperature (°C)</label><input type="number" step="0.1" id="temperature" required></div>
+        <div class="input-group"><label for="humidity">Humidity (%)</label><input type="number" step="0.1" id="humidity" required></div>
+        <div class="input-group"><label for="ph">Soil pH</label><input type="number" step="0.1" id="ph" required></div>
+        <div class="input-group"><label for="rainfall">Rainfall (mm)</label><input type="number" step="0.1" id="rainfall" required></div>
+        <button type="submit">Get Recommendation 🚜</button>
+      </form>
+      <div id="result">Your recommendation will appear here.</div>
+    </div>
+
+    <div class="weather-box">
+      <h2>🌤 Weather</h2>
+      <div class="weather-temp">--°C</div>
+      <div class="weather-condition">Loading...</div>
+      <div class="weather-details">💧 Humidity: --%<br>🌧 Rainfall: -- mm<br>🌬 Wind: -- km/h</div>
+      <div class="recommend-note">Fetching recommendation...</div>
+    </div>
+  </div>
+  <iframe src="index2.html" width="400" height="500">
+
+  </iframe>
+
+  <script>
+    const API_KEY = "2abfac497b7f162af8424d780f7bbfd0";
+    function updateWeather(lat, lon) {
+      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`)
+        .then(res => res.json())
+        .then(data => {
+          const temp = Math.round(data.main.temp);
+          const hum = data.main.humidity;
+          const desc = data.weather[0].description;
+          const wind = data.wind.speed;
+          const rain = data.rain ? (data.rain["1h"] || data.rain["3h"] || 0) : 0;
+          document.querySelector('.weather-temp').textContent = `${temp}°C`;
+          document.querySelector('.weather-condition').textContent = desc.charAt(0).toUpperCase() + desc.slice(1);
+          document.querySelector('.weather-details').innerHTML =
+            `💧 Humidity: ${hum}%<br>🌧 Rainfall: ${rain} mm<br>🌬 Wind: ${wind} km/h`;
+          document.getElementById('temperature').value = temp;
+          document.getElementById('humidity').value = hum;
+          document.getElementById('rainfall').value = rain;
+          document.querySelector('.recommend-note').textContent =
+            temp > 25 && rain < 5 ? "🌶 Good for tomatoes or chilies!" : "🥬 Leafy greens may thrive now.";
+        })
+        .catch(() => document.querySelector('.weather-condition').textContent = "Weather unavailable");
+    }
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => updateWeather(pos.coords.latitude, pos.coords.longitude),
+        () => document.querySelector('.weather-condition').textContent = "Location denied"
+      );
+    }
+    document.getElementById('crop-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const formData = {
+        N: parseFloat(document.getElementById('N').value),
+        P: parseFloat(document.getElementById('P').value),
+        K: parseFloat(document.getElementById('K').value),
+        temperature: parseFloat(document.getElementById('temperature').value),
+        humidity: parseFloat(document.getElementById('humidity').value),
+        ph: parseFloat(document.getElementById('ph').value),
+        rainfall: parseFloat(document.getElementById('rainfall').value)
+      };
+      const result = document.getElementById('result');
+      result.textContent = "⏳ Analyzing...";
+      try {
+        const res = await fetch("http://127.0.0.1:5000/predict", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(formData)
+        });
+        const data = await res.json();
+        if (data.recommended_crop) {
+          result.style.background = "#d4edda";
+          result.textContent = ` Recommended Crop: ${data.recommended_crop}`;
+        } else {
+          result.style.background = "#f8d7da";
+          result.textContent = " Error: " + (data.error || "Unknown error");
+        }
+      } catch {
+        result.style.background = "#f8d7da";
+        result.textContent = " Could not get recommendation.";
+      }
+    });
+  </script>
+</body>
+</html>
